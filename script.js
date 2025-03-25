@@ -1,11 +1,11 @@
-// Import Firebase SDK modules
+// Firebase SDKs - modular import
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import {
   getFirestore,
@@ -16,14 +16,14 @@ import {
   collection
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-// Your Firebase config
+// Config for your Firebase project
 const firebaseConfig = {
   apiKey: "AIzaSyBFippTUHmMjLDnxC3teVgv3QoZLA7e2po",
   authDomain: "sso-authentication-d474d.firebaseapp.com",
   projectId: "sso-authentication-d474d",
 };
 
-// Initialize Firebase app + services
+// Initialize Firebase services
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -35,7 +35,7 @@ function signUp() {
 
   createUserWithEmailAndPassword(auth, email, pass)
     .then(userCred => {
-      alert("Signed up: " + userCred.user.email);
+      alert("Signed up as: " + userCred.user.email);
     })
     .catch(err => alert(err.message));
 }
@@ -52,50 +52,67 @@ function login() {
     .catch(err => alert(err.message));
 }
 
-// Save profile
+// Save Profile
 function saveProfile() {
   const uid = auth.currentUser.uid;
-  const fullName = document.getElementById("fullName").value;
-  const preferredName = document.getElementById("preferredName").value;
-  const pronouns = document.getElementById("pronouns").value;
-
   const data = {
-    fullName,
-    preferredName,
-    pronouns,
+    fullName: document.getElementById("fullName").value,
+    preferredName: document.getElementById("preferredName").value,
+    pronouns: document.getElementById("pronouns").value,
     email: auth.currentUser.email
   };
 
   setDoc(doc(db, "students", uid), data)
-    .then(() => alert("Profile saved!"))
+    .then(() => {
+      alert("Profile saved!");
+      loadDirectory();
+    })
     .catch(err => alert(err.message));
 }
 
-// Auth state listener
+// Logout
+function logout() {
+  signOut(auth).then(() => {
+    location.reload();
+  });
+}
+
+// Load all students into the directory
+function loadDirectory() {
+  const dir = document.getElementById("directory");
+  dir.innerHTML = "";
+
+  getDocs(collection(db, "students")).then(snapshot => {
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      dir.innerHTML += `<div><strong>${d.preferredName}</strong> (${d.fullName}) – ${d.pronouns}</div>`;
+    });
+  });
+}
+
+// Track auth state
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     document.getElementById("auth-section").style.display = "none";
     document.getElementById("form-section").style.display = "block";
 
-    const docSnap = await getDoc(doc(db, "students", user.uid));
-    if (docSnap.exists()) {
-      const data = docSnap.data();
+    // Load their profile
+    const snap = await getDoc(doc(db, "students", user.uid));
+    if (snap.exists()) {
+      const data = snap.data();
       document.getElementById("fullName").value = data.fullName || "";
       document.getElementById("preferredName").value = data.preferredName || "";
       document.getElementById("pronouns").value = data.pronouns || "";
     }
+
+    loadDirectory();
   } else {
     document.getElementById("auth-section").style.display = "block";
     document.getElementById("form-section").style.display = "none";
   }
 });
 
-// Logout
-function logout() {
-  signOut(auth).then(() => location.reload());
-}
-
-// Expose functions to HTML
+// Make functions accessible to HTML
 window.login = login;
 window.signUp = signUp;
 window.saveProfile = saveProfile;
