@@ -1,6 +1,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-  import { getAuth, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBFippTUHmMjLDnxC3teVgv3QoZLA7e2po",
@@ -10,30 +11,26 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getFirestore(app);
 
-  // Try to use token from localStorage
-  const token = localStorage.getItem("picpagesSession");
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      // Not logged in on this domain → redirect to CAS
+      window.location.href = "https://secure.its.ordunafoundation.org/external/picpages/login";
+      return;
+    }
 
-  if (!token) {
-    window.location.href = "https://secure.its.ordunafoundation.org/external/picpages/login";
-  } else {
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        // Already authenticated, show profile or directory
-        document.getElementById("directory-section").style.display = "block";
-        document.getElementById("status").textContent = `Logged in as ${user.email}`;
-      } else {
-        // Try to authenticate using the ID token
-        auth.signInWithCustomToken(token)
-          .then(() => {
-            document.getElementById("directory-section").style.display = "block";
-            document.getElementById("status").textContent = `Logged in as ${auth.currentUser.email}`;
-          })
-          .catch(() => {
-            localStorage.removeItem("picpagesSession");
-            window.location.href = "https://secure.its.ordunafoundation.org/external/picpages/login";
-          });
-      }
-    });
-  }
+    const snap = await getDoc(doc(db, "students", user.uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      document.body.innerHTML = `
+        <h2>Welcome, ${data.preferredName}</h2>
+        <p>${data.email} — ${data.role}</p>
+        <p>Pronouns: ${data.pronouns}</p>
+        ${data.photoUrl ? `<img src="${data.photoUrl}" style="max-width: 120px;" />` : ''}
+      `;
+    } else {
+      document.body.innerHTML = `<p>Profile not found for ${user.email}</p>`;
+    }
+  });
 </script>
