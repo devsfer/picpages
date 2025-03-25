@@ -1,74 +1,65 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Student Directory</title>
-  <link rel="stylesheet" href="/style.css" />
-</head>
-<body>
-  <h1>Welcome to the ASMSA Directory</h1>
-  <div id="status">Checking session...</div>
-  <div id="profile" style="display: none;"></div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signInWithCustomToken
+  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc
+  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signInWithCustomToken
-    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc
-    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFippTUHmMjLDnxC3teVgv3QoZLA7e2po",
+    authDomain: "sso-authentication-d474d.firebaseapp.com",
+    projectId: "sso-authentication-d474d"
+  };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBFippTUHmMjLDnxC3teVgv3QoZLA7e2po",
-      authDomain: "sso-authentication-d474d.firebaseapp.com",
-      projectId: "sso-authentication-d474d"
-    };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  const token = localStorage.getItem("picpagesSession");
 
-    const token = localStorage.getItem("picpagesSession");
-
-    if (!token) {
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // Already signed in, show profile
+      showProfile(user.uid);
+    } else if (token) {
+      // Try to re-sign in using the token (doesn't work with ID tokens, only with custom tokens)
+      // So we skip re-sign in and just prompt the user
+      document.getElementById("status").innerHTML = `
+        <p>You're signed in at CAS, but not authenticated here. Please log in directly.</p>
+        <a href="https://secure.its.ordunafoundation.org/external/picpages/login">Log in via CAS</a>
+      `;
+    } else {
+      // No session at all
       document.getElementById("status").innerHTML = `
         <p>You are not logged in. <a href="https://secure.its.ordunafoundation.org/external/picpages/login">Log in via CAS</a></p>
       `;
-    } else {
-      // Firebase Auth expects a "custom token", but we’re faking session presence here.
-      // Instead of signing in again, we’ll wait for the user to be picked up
-      onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-          // Force re-login if no Firebase session
-          document.getElementById("status").innerHTML = `
-            <p>Session expired. <a href="https://secure.its.ordunafoundation.org/external/picpages/login">Log in via CAS</a></p>
-          `;
-        } else {
-          const snap = await getDoc(doc(db, "students", user.uid));
-          const profile = document.getElementById("profile");
-          document.getElementById("status").style.display = "none";
-
-          if (snap.exists()) {
-            const data = snap.data();
-            profile.innerHTML = `
-              <h2>${data.preferredName}</h2>
-              <p><strong>Email:</strong> ${data.email}</p>
-              <p><strong>Pronouns:</strong> ${data.pronouns}</p>
-              <p><strong>Role:</strong> ${data.role}</p>
-              ${data.photoUrl ? `<img src="${data.photoUrl}" style="max-width: 150px; border-radius: 8px;" />` : ''}
-            `;
-            profile.style.display = "block";
-          } else {
-            profile.innerHTML = "<p>No profile data found.</p>";
-          }
-        }
-      });
     }
-  </script>
-</body>
-</html>
+  });
+
+  async function showProfile(uid) {
+    const snap = await getDoc(doc(db, "students", uid));
+    const profile = document.getElementById("profile");
+    document.getElementById("status").style.display = "none";
+
+    if (snap.exists()) {
+      const data = snap.data();
+      profile.innerHTML = `
+        <h2>${data.preferredName}</h2>
+        <p><strong>Email:</strong> ${data.email}</p>
+        <p><strong>Pronouns:</strong> ${data.pronouns}</p>
+        <p><strong>Role:</strong> ${data.role}</p>
+        ${data.photoUrl ? `<img src="${data.photoUrl}" style="max-width: 150px; border-radius: 8px;" />` : ''}
+      `;
+      profile.style.display = "block";
+    } else {
+      profile.innerHTML = "<p>No profile found.</p>";
+      profile.style.display = "block";
+    }
+  }
+</script>
