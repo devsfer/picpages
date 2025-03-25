@@ -1,65 +1,39 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-  import {
-    getAuth,
-    onAuthStateChanged,
-    signInWithCustomToken
-  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-  import {
-    getFirestore,
-    doc,
-    getDoc
-  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+  import { getAuth, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBFippTUHmMjLDnxC3teVgv3QoZLA7e2po",
     authDomain: "sso-authentication-d474d.firebaseapp.com",
-    projectId: "sso-authentication-d474d"
+    projectId: "sso-authentication-d474d",
   };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = getFirestore(app);
 
+  // Try to use token from localStorage
   const token = localStorage.getItem("picpagesSession");
 
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      // Already signed in, show profile
-      showProfile(user.uid);
-    } else if (token) {
-      // Try to re-sign in using the token (doesn't work with ID tokens, only with custom tokens)
-      // So we skip re-sign in and just prompt the user
-      document.getElementById("status").innerHTML = `
-        <p>You're signed in at CAS, but not authenticated here. Please log in directly.</p>
-        <a href="https://secure.its.ordunafoundation.org/external/picpages/login">Log in via CAS</a>
-      `;
-    } else {
-      // No session at all
-      document.getElementById("status").innerHTML = `
-        <p>You are not logged in. <a href="https://secure.its.ordunafoundation.org/external/picpages/login">Log in via CAS</a></p>
-      `;
-    }
-  });
-
-  async function showProfile(uid) {
-    const snap = await getDoc(doc(db, "students", uid));
-    const profile = document.getElementById("profile");
-    document.getElementById("status").style.display = "none";
-
-    if (snap.exists()) {
-      const data = snap.data();
-      profile.innerHTML = `
-        <h2>${data.preferredName}</h2>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Pronouns:</strong> ${data.pronouns}</p>
-        <p><strong>Role:</strong> ${data.role}</p>
-        ${data.photoUrl ? `<img src="${data.photoUrl}" style="max-width: 150px; border-radius: 8px;" />` : ''}
-      `;
-      profile.style.display = "block";
-    } else {
-      profile.innerHTML = "<p>No profile found.</p>";
-      profile.style.display = "block";
-    }
+  if (!token) {
+    window.location.href = "https://secure.its.ordunafoundation.org/external/picpages/login";
+  } else {
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Already authenticated, show profile or directory
+        document.getElementById("directory-section").style.display = "block";
+        document.getElementById("status").textContent = `Logged in as ${user.email}`;
+      } else {
+        // Try to authenticate using the ID token
+        auth.signInWithCustomToken(token)
+          .then(() => {
+            document.getElementById("directory-section").style.display = "block";
+            document.getElementById("status").textContent = `Logged in as ${auth.currentUser.email}`;
+          })
+          .catch(() => {
+            localStorage.removeItem("picpagesSession");
+            window.location.href = "https://secure.its.ordunafoundation.org/external/picpages/login";
+          });
+      }
+    });
   }
 </script>
