@@ -1,33 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>ASMSA Student Directory</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <h1>ASMSA Directory Login</h1>
+// script.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-  <div id="auth-section">
-    <input id="email" type="email" placeholder="Email" />
-    <input id="password" type="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
-    <button onclick="signUp()">Sign Up</button>
-  </div>
+const firebaseConfig = {
+  apiKey: "AIzaSyBFippTUHmMjLDnxC3teVgv3QoZLA7e2po",
+  authDomain: "sso-authentication-d474d.firebaseapp.com",
+  projectId: "sso-authentication-d474d",
+};
 
-  <div id="form-section" style="display:none;">
-    <h2>Profile</h2>
-    <input id="fullName" placeholder="Full Name" />
-    <input id="preferredName" placeholder="Preferred Name" />
-    <input id="pronouns" placeholder="Pronouns" />
-    <button onclick="saveProfile()">Save</button>
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-    <h3>All Students</h3>
-    <div id="directory"></div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
+// Example login function
+function login() {
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("password").value;
+  signInWithEmailAndPassword(auth, email, pass)
+    .then(userCred => alert("Logged in as " + userCred.user.email))
+    .catch(err => alert(err.message));
+}
