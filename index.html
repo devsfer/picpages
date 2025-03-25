@@ -2,9 +2,6 @@
 <html>
 <head>
   <title>ASMSA Student Directory</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,11 +20,13 @@
     <input id="preferredName" placeholder="Preferred Name" />
     <input id="pronouns" placeholder="Pronouns" />
     <button onclick="saveProfile()">Save</button>
+    <button onclick="logout()">Logout</button>
 
     <h3>All Students</h3>
     <div id="directory"></div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Load the ES modules -->
+  <script type="module" src="script.js"></script>
 </body>
-</html> #sd
+</html>
