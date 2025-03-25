@@ -6,7 +6,7 @@
   const firebaseConfig = {
     apiKey: "AIzaSyBFippTUHmMjLDnxC3teVgv3QoZLA7e2po",
     authDomain: "sso-authentication-d474d.firebaseapp.com",
-    projectId: "sso-authentication-d474d",
+    projectId: "sso-authentication-d474d"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -15,7 +15,7 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      // Not logged in on this domain → redirect to CAS
+      // Not logged in → redirect to CAS login
       window.location.href = "https://secure.its.ordunafoundation.org/external/picpages/login";
       return;
     }
@@ -25,12 +25,13 @@
       const data = snap.data();
       document.body.innerHTML = `
         <h2>Welcome, ${data.preferredName}</h2>
-        <p>${data.email} — ${data.role}</p>
+        <p>Email: ${data.email}</p>
+        <p>Role: ${data.role}</p>
         <p>Pronouns: ${data.pronouns}</p>
-        ${data.photoUrl ? `<img src="${data.photoUrl}" style="max-width: 120px;" />` : ''}
+        ${data.photoUrl ? `<img src="${data.photoUrl}" style="max-width: 120px; border-radius: 8px;" />` : ''}
       `;
     } else {
-      document.body.innerHTML = `<p>Profile not found for ${user.email}</p>`;
+      document.body.innerHTML = `<p>No profile found for ${user.email}.</p>`;
     }
   });
 </script>
