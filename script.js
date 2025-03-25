@@ -21,3 +21,7 @@ function login() {
     .then(userCred => alert("Logged in as " + userCred.user.email))
     .catch(err => alert(err.message));
 }
+
+window.login = login;
+window.signUp = signUp;
+window.saveProfile = saveProfile;
