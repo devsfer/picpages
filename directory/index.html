@@ -1,0 +1,46 @@
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithRedirect,
+  GoogleAuthProvider
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBFippTUHmMjLDnxC3teVgv3QoZLA7e2po",
+  authDomain: "sso-authentication-d474d.firebaseapp.com",
+  projectId: "sso-authentication-d474d"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    // 🔁 Redirect to CAS login if no session
+    window.location.href = "https://secure.its.ordunafoundation.org/external/picpages/login";
+    return;
+  }
+
+  // ✅ Fetch profile
+  const snap = await getDoc(doc(db, "students", user.uid));
+  if (snap.exists()) {
+    const data = snap.data();
+    document.body.innerHTML += `
+      <h2>Welcome, ${data.preferredName}</h2>
+      <p>${data.email} – ${data.role}</p>
+      <p>${data.pronouns}</p>
+      ${data.photoUrl ? `<img src="${data.photoUrl}" style="max-width: 100px;" />` : ''}
+    `;
+  } else {
+    document.body.innerHTML += "<p>Profile not found.</p>";
+  }
+});
+</script>
